@@ -1,4 +1,4 @@
-#include <stdio.h> 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -21,8 +21,12 @@ void searchContact();
 void displayContacts();
 int isDuplicate(const char *value, int checkPhone);
 void sanitizeInput(char *input);
+void saveContactsToFile();
+void loadContactsFromFile();
 
 int main() {
+    loadContactsFromFile(); // Load contacts from file when the program starts
+
     int choice;
     while (1) {
         printf("\n------------------- Contact Management -------------------\n");
@@ -40,6 +44,7 @@ int main() {
             case 5: displayContacts(); break;
             case 6: 
                 printf("Exiting from the system...\n");
+                saveContactsToFile(); // Save contacts before exiting
                 return 0;
             default: printf("Invalid choice!\n");
         }
@@ -63,7 +68,7 @@ void addContact() {
     sanitizeInput(newContact.name);
 
     while (isDuplicate(newContact.name, 0)) {
-        printf("Name already exists, please enter a different name: ");
+        printf("Name already exists, enter a different name: ");
         fgets(newContact.name, NAME_LEN, stdin);
         sanitizeInput(newContact.name);
     }
@@ -73,7 +78,7 @@ void addContact() {
     sanitizeInput(newContact.phone);
     
     while (isDuplicate(newContact.phone, 1)) {
-        printf("Phone already exists, please try again: ");
+        printf("Phone already exists, try again: ");
         fgets(newContact.phone, PHONE_LEN, stdin);
         sanitizeInput(newContact.phone);
     }
@@ -83,18 +88,20 @@ void addContact() {
     sanitizeInput(newContact.email);
     
     while (isDuplicate(newContact.email, 0)) {
-        printf("Email already used, please enter a different email: ");
+        printf("Email already used, enter a different email: ");
         fgets(newContact.email, EMAIL_LEN, stdin);
         sanitizeInput(newContact.email);
     }
 
     contacts[contactCount++] = newContact;
     printf("Contact added!\n");
+    
+    saveContactsToFile(); // Save contacts to file after adding
 }
 
 void deleteContact() {
     char name[NAME_LEN];
-    printf("Enter the name of the contact you want to delete: ");
+    printf("Enter name of the contact you want to delete: ");
     fgets(name, NAME_LEN, stdin);
     sanitizeInput(name);
 
@@ -102,6 +109,8 @@ void deleteContact() {
         if (strcmp(contacts[i].name, name) == 0) {
             contacts[i] = contacts[--contactCount];
             printf("Contact deleted!\n");
+            
+            saveContactsToFile(); // Save contacts to file after deletion
             return;
         }
     }
@@ -110,7 +119,7 @@ void deleteContact() {
 
 void updateContact() {
     char name[NAME_LEN];
-    printf("Enter the name of the contact you want to update: ");
+    printf("Enter name of the contact you want to update: ");
     fgets(name, NAME_LEN, stdin);
     sanitizeInput(name);
 
@@ -142,6 +151,8 @@ void updateContact() {
             }
 
             printf("Contact updated!\n");
+            
+            saveContactsToFile(); // Save contacts to file after updating
             return;
         }
     }
@@ -150,7 +161,7 @@ void updateContact() {
 
 void searchContact() {
     char name[NAME_LEN];
-    printf("Enter the name of the contact you want to search: ");
+    printf("Enter name of the contact you want to search: ");
     fgets(name, NAME_LEN, stdin);
     sanitizeInput(name);
 
@@ -183,4 +194,35 @@ int isDuplicate(const char *value, int checkPhone) {
         }
     }
     return 0;
+}
+
+void saveContactsToFile() {
+    FILE *file = fopen("contacts.txt", "w");
+    if (file == NULL) {
+        printf("Error opening file for saving contacts!\n");
+        return;
+    }
+
+    for (int i = 0; i < contactCount; i++) {
+        fprintf(file, "%s,%s,%s\n", contacts[i].name, contacts[i].phone, contacts[i].email);
+    }
+
+    fclose(file);
+    printf("Contacts saved to file successfully.\n");
+}
+
+void loadContactsFromFile() {
+    FILE *file = fopen("contacts.txt", "r");
+    if (file == NULL) {
+        printf("No existing contact file found, starting fresh.\n");
+        return;
+    }
+
+    contactCount = 0;
+    while (fscanf(file, "%[^,],%[^,],%[^\n]\n", contacts[contactCount].name, contacts[contactCount].phone, contacts[contactCount].email) == 3) {
+        contactCount++;
+    }
+
+    fclose(file);
+    printf("Contacts loaded from file successfully.\n");
 }
